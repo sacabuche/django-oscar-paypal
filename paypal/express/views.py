@@ -429,6 +429,11 @@ class ShippingOptionsView(View):
             ('METHOD', 'CallbackResponse'),
             ('CURRENCYCODE', self.request.POST.get('CURRENCYCODE', 'GBP')),
         ]
+        if not len(methods):
+            # No shipping methods available - we flag this up to PayPal indicating that we
+            # do not ship to the shipping address.
+            pairs.append(('NO_SHIPPING_OPTION_DETAILS', 1))
+            
         for index, method in enumerate(methods):
             charge = method.calculate(basket).incl_tax
 
@@ -442,9 +447,6 @@ class ShippingOptionsView(View):
             pairs.append(('L_INSURANCEAMT%d' % index, D('0.00')))
             # We assume that the first returned method is the default one
             pairs.append(('L_SHIPPINGOPTIONISDEFAULT%d' % index, 1 if index == 0 else 0))
-        else:
-            # No shipping methods available - we flag this up to PayPal indicating that we
-            # do not ship to the shipping address.
-            pairs.append(('NO_SHIPPING_OPTION_DETAILS', 1))
+     
         payload = urlencode(pairs)
         return HttpResponse(payload)
